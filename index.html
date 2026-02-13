@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legalización Digital - Suma S.A.S.</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+    /* --- ESTÉTICA CORPORATIVA SUMA --- */
+    :root {
+        --primary: #006837; 
+        --secondary: #8bc53f; 
+        --light-green: #e8f5e9;
+        --error: #d32f2f;
+        --bg: #f0f2f5;
+        --white: #ffffff;
+        --blue-info: #0277bd;
+        --bg-info: #e1f5fe;
+    }
+    
+    body {
+        font-family: 'Segoe UI', Roboto, sans-serif;
+        background-color: var(--bg);
+        margin: 0; padding: 15px;
+        color: #333;
+        display: flex; flex-direction: column; align-items: center;
+    }
+
+    .container {
+        background: var(--white);
+        width: 100%; max-width: 800px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    /* HEADER */
+    .header {
+        background: var(--primary);
+        color: white; padding: 25px 20px; text-align: center;
+        border-bottom: 5px solid var(--secondary);
+    }
+    .logo-container {
+        width: 80px; height: 80px; margin: 0 auto 10px;
+        background: white; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        border: 3px solid var(--secondary); cursor: pointer;
+    }
+    .logo-container img { max-width: 80%; max-height: 80%; }
+    h1 { margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+    p { margin: 5px 0 0; opacity: 0.9; font-size: 13px; }
+
+    /* SECCIONES */
+    .section { padding: 20px; border-bottom: 1px solid #eee; }
+    .section-title {
+        font-size: 16px; font-weight: bold; color: var(--primary);
+        text-transform: uppercase; margin-bottom: 15px;
+        display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::before { content: ''; width: 5px; height: 20px; background: var(--secondary); display: block; }
+    
+    .subsection-title {
+        font-size: 14px; font-weight: 700; color: #555; margin: 15px 0 10px;
+        padding-left: 10px; border-left: 3px solid var(--secondary);
+        background: #f9f9f9; padding: 5px 10px;
+    }
+
+    /* INPUTS */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px; color: #444; }
+    
+    input, select {
+        width: 100%; padding: 12px;
+        border: 1px solid #ccc; border-radius: 8px;
+        font-size: 16px; box-sizing: border-box;
+        transition: 0.3s;
+    }
+    input:focus, select:focus { border-color: var(--primary); outline: none; background: #f9fff9; }
+    .money-input { font-family: monospace; font-weight: bold; color: #333; font-size: 16px; }
+
+    /* GRID BANCOS */
+    .bank-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;
+    }
+    @media (max-width: 600px) { .bank-grid { grid-template-columns: 1fr; } }
+
+    .bank-card {
+        background: #fafafa; border: 1px solid #ddd; border-radius: 10px; padding: 15px;
+    }
+    .bank-title {
+        font-weight: bold; color: var(--primary);
+        border-bottom: 2px solid var(--secondary);
+        padding-bottom: 5px; margin-bottom: 10px;
+        font-size: 11px; text-transform: uppercase;
+        display: flex; justify-content: space-between;
+    }
+    .bank-inputs input { margin-bottom: 8px; padding: 8px; font-size: 14px; }
+    .add-btn {
+        background: var(--secondary); color: white; border: none;
+        border-radius: 5px; padding: 8px; font-size: 14px; font-weight: bold;
+        cursor: pointer; width: 100%; margin-top: 5px;
+    }
+    
+    /* TOTALIZADORES VISUALES */
+    .total-card {
+        background: var(--bg-info); border: 1px solid var(--blue-info);
+        color: var(--blue-info); border-radius: 8px; padding: 15px;
+        text-align: center; margin-bottom: 10px;
+    }
+    .total-label { font-size: 12px; text-transform: uppercase; display: block; opacity: 0.8; margin-bottom: 5px; }
+    .total-value { font-size: 22px; font-weight: 800; display: block; }
+
+    /* ARQUEO SEMÁFORO */
+    .arqueo-card {
+        background: #f8f9fa; border-radius: 10px; padding: 20px;
+        text-align: center; border: 2px solid #ddd;
+    }
+    .arqueo-card.success { background: var(--light-green); border-color: var(--primary); color: var(--primary); }
+    .arqueo-card.error { background: #ffebee; border-color: var(--error); color: var(--error); }
+    .arqueo-val { font-size: 32px; font-weight: 800; margin: 10px 0; }
+
+    /* UPLOAD ZONES */
+    .upload-zone {
+        border: 2px dashed #bbb; border-radius: 10px;
+        padding: 25px; text-align: center; cursor: pointer;
+        background: #fafafa; position: relative; transition: 0.3s; margin-bottom: 10px;
+    }
+    .upload-zone:hover { border-color: var(--primary); background: #f0fdf4; }
+    .upload-count { font-weight: bold; color: var(--primary); display: block; margin-top: 5px; }
+    .upload-zone input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; }
+
+    /* BOTONES */
+    .actions { padding: 30px; display: flex; flex-direction: column; gap: 15px; }
+    
+    button.main-btn {
+        width: 100%; padding: 20px; border: none; border-radius: 50px;
+        background: linear-gradient(135deg, var(--primary), #004d29);
+        color: white; font-size: 18px; font-weight: bold;
+        cursor: pointer; box-shadow: 0 8px 20px rgba(0,104,55,0.3);
+        transition: 0.3s; text-transform: uppercase;
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    button:disabled { background: #ccc; cursor: wait; box-shadow: none; }
+
+    #loader { display: none; text-align: center; color: var(--primary); font-weight: bold; margin-bottom: 10px; }
+    .footer { text-align: center; padding: 20px; font-size: 12px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <label class="logo-container">
+            <img id="appLogo" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+            <input type="file" accept="image/*" hidden onchange="loadLogo(this)">
+        </label>
+        <h1>Legalización Digital</h1>
+        <p>Suma S.A.S. - Estación de Trabajo V15</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">1. Información General</div>
+        <div class="form-group">
+            <label>Transportador:</label>
+            <select id="transportador">
+                <option value="" disabled selected>-- Seleccionar --</option>
+                <option>FERNEL 11</option><option>JOHAN 12</option><option>JORGE 13</option>
+                <option>MILLER 14</option><option>RUBEN 15</option><option>ALBERTO 21</option>
+                <option>OSWALDO 22</option><option>RODRIGO 23</option><option>SEBASTIAN 24</option>
+                <option>YEISON 25</option><option>CAMILO 41</option><option>CARLOS 42</option>
+                <option>FREDDY 43</option><option>OSCAR 44</option><option>BRYAN 51</option>
+                <option>FLOER 52</option><option>FRANCISCO 53</option><option>JOSE OLAYA 54</option>
+                <option>ADICIONAL 10</option>
+            </select>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group"><label>Fecha Consignación:</label><input type="date" id="fechaPlanilla"></div>
+            <div class="form-group"><label>N° Planilla:</label><input type="number" id="numPlanilla" inputmode="numeric"></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">2. Registro Consignaciones</div>
+        
+        <div class="subsection-title">2.1 COMPAÑÍA SUMA S.A.S.</div>
+        <div class="bank-grid">
+            <div class="bank-card"><div class="bank-title">Bancolombia <span id="total_bancolombia">$0</span></div><div id="inputs_bancolombia" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-bancolombia" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('bancolombia')">+</button></div>
+            <div class="bank-card"><div class="bank-title">Nequi <span id="total_nequi">$0</span></div><div id="inputs_nequi" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-nequi" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('nequi')">+</button></div>
+            <div class="bank-card"><div class="bank-title">Davivienda <span id="total_davivienda">$0</span></div><div id="inputs_davivienda" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-davivienda" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('davivienda')">+</button></div>
+            <div class="bank-card"><div class="bank-title">Daviplata <span id="total_daviplata">$0</span></div><div id="inputs_daviplata" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-daviplata" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('daviplata')">+</button></div>
+        </div>
+
+        <div class="subsection-title">2.2 CONSIGNACIÓN A PROVEEDORES</div>
+        <div class="bank-grid">
+            <div class="bank-card"><div class="bank-title">Quala <span id="total_quala">$0</span></div><div id="inputs_quala" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-quala" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('quala')">+</button></div>
+            <div class="bank-card"><div class="bank-title" style="font-size: 10px;">POLAR FOCALIZADO 3042671 <span id="total_polar">$0</span></div><div id="inputs_polar" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-polar" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('polar')">+</button></div>
+            <div class="bank-card"><div class="bank-title">Unilever <span id="total_unilever">$0</span></div><div id="inputs_unilever" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-unilever" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('unilever')">+</button></div>
+            <div class="bank-card"><div class="bank-title">Super <span id="total_super">$0</span></div><div id="inputs_super" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-super" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('super')">+</button></div>
+            <div class="bank-card"><div class="bank-title" style="font-size: 10px;">POLAR MIXTO 3044268 <span id="total_sumapolar">$0</span></div><div id="inputs_sumapolar" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-sumapolar" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('sumapolar')">+</button></div>
+            <!-- NUEVOS PROVEEDORES -->
+            <div class="bank-card"><div class="bank-title">Gradezco <span id="total_gradezco">$0</span></div><div id="inputs_gradezco" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-gradezco" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('gradezco')">+</button></div>
+            <div class="bank-card"><div class="bank-title">OTRO <span id="total_otro">$0</span></div><div id="inputs_otro" class="bank-inputs"><input type="text" inputmode="numeric" class="money-input m-otro" placeholder="$" onkeyup="fmt(this)"></div><button class="add-btn" onclick="addInput('otro')">+</button></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">3. Cierre de Caja</div>
+        <div class="form-group"><label>💰 Valor Total del Cargue (A Entregar):</label><input type="text" inputmode="numeric" class="money-input" id="valCargue" placeholder="$0" onkeyup="fmt(this)"></div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div class="form-group"><label>💵 Efectivo:</label><input type="text" inputmode="numeric" class="money-input" id="valEfectivo" placeholder="$0" onkeyup="fmt(this)"></div>
+            <div class="form-group"><label>↩️ Devoluciones:</label><input type="text" inputmode="numeric" class="money-input" id="valDevoluciones" placeholder="$0" onkeyup="fmt(this)"></div>
+        </div>
+        <div class="form-group"><label>⚠️ Gastos / Faltantes:</label><input type="text" inputmode="numeric" class="money-input" id="valGastos" placeholder="$0" onkeyup="fmt(this)"></div>
+        
+        <div style="margin-top: 25px; border-top: 2px dashed #ddd; padding-top: 20px;">
+            <div class="total-card">
+                <span class="total-label">GRAN TOTAL CONSIGNADO (SUMA + PROVEEDORES)</span>
+                <span class="total-value" id="lblTotalConsig">$0</span>
+            </div>
+            
+            <div id="arqueoResult" class="arqueo-card">
+                <div class="arqueo-msg">ESTADO DE CUENTA</div>
+                <div class="arqueo-val" id="diffVal">$0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">4. Evidencia Digital</div>
+        
+        <div class="form-group">
+            <label>📸 Fotos Consignaciones SUMA (4xHoja):</label>
+            <div class="upload-zone">
+                <div id="lblConsigSuma">Toca para subir (Suma SAS)</div>
+                <input type="file" id="imgConsigSuma" accept="image/*" multiple onchange="updateCount(this, 'lblConsigSuma')">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📸 Fotos Consignaciones PROVEEDORES (4xHoja):</label>
+            <div class="upload-zone">
+                <div id="lblConsigProv">Toca para subir (Proveedores)</div>
+                <input type="file" id="imgConsigProv" accept="image/*" multiple onchange="updateCount(this, 'lblConsigProv')">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📄 Fotos Planillas / Documentos (1 por Hoja):</label>
+            <div class="upload-zone">
+                <div id="lblPlanilla">Toca para subir</div>
+                <input type="file" id="imgPlanilla" accept="image/*" multiple onchange="updateCount(this, 'lblPlanilla')">
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <div id="loader">⏳ Generando Reportes...</div>
+        <button class="main-btn" id="btnDownload" onclick="procesarYDescargar()">
+            📥 GENERAR Y GUARDAR ARCHIVOS (ZIP)
+        </button>
+    </div>
+</div>
+
+<div class="footer">Suma S.A.S. © 2026 - V15</div>
+
+<script>
+    function loadLogo(i){ if(i.files[0]){const r=new FileReader();r.onload=e=>document.getElementById('appLogo').src=e.target.result;r.readAsDataURL(i.files[0]);}}
+    
+    function addInput(b){ 
+        const c=document.getElementById(`inputs_${b}`); 
+        const i=document.createElement('input'); 
+        i.type="text";
+        i.inputMode="numeric";
+        i.className=`money-input m-${b}`; 
+        i.placeholder='$'; 
+        i.onkeyup=function(){fmt(this)}; 
+        c.appendChild(i);
+    }
+    
+    function fmt(i){ 
+        let v=i.value.replace(/\D/g,''); 
+        i.value=v===''? '' : new Intl.NumberFormat('es-CO').format(parseInt(v)); 
+        calcularArqueo(); 
+    }
+    
+    function getVal(id){ 
+        const e=document.getElementById(id); 
+        return e? parseInt(e.value.replace(/\./g,'').replace(/,/g,''))||0 : 0; 
+    }
+    
+    function getSum(cls){ 
+        let s=0; 
+        document.querySelectorAll(`.${cls}`).forEach(i=>s+=parseInt(i.value.replace(/\./g,'').replace(/,/g,''))||0); 
+        return s;
+    }
+    
+    function updateCount(i,id){ 
+        document.getElementById(id).innerHTML=`✅ <strong>${i.files.length} archivos cargados</strong>`; 
+        document.getElementById(id).style.color='var(--primary)';
+    }
+
+    function calcularArqueo() {
+        const tB=getSum('m-bancolombia'), tN=getSum('m-nequi'), tD=getSum('m-davivienda'), tDP=getSum('m-daviplata');
+        document.getElementById('total_bancolombia').innerText=`$${new Intl.NumberFormat('es-CO').format(tB)}`;
+        document.getElementById('total_nequi').innerText=`$${new Intl.NumberFormat('es-CO').format(tN)}`;
+        document.getElementById('total_davivienda').innerText=`$${new Intl.NumberFormat('es-CO').format(tD)}`;
+        document.getElementById('total_daviplata').innerText=`$${new Intl.NumberFormat('es-CO').format(tDP)}`;
+
+        const tQua=getSum('m-quala'), tPol=getSum('m-polar'), tUni=getSum('m-unilever'), tSup=getSum('m-super'), tSumP=getSum('m-sumapolar');
+        // NUEVOS PROVEEDORES
+        const tGra=getSum('m-gradezco'), tOtr=getSum('m-otro');
+        
+        document.getElementById('total_quala').innerText=`$${new Intl.NumberFormat('es-CO').format(tQua)}`;
+        document.getElementById('total_polar').innerText=`$${new Intl.NumberFormat('es-CO').format(tPol)}`;
+        document.getElementById('total_unilever').innerText=`$${new Intl.NumberFormat('es-CO').format(tUni)}`;
+        document.getElementById('total_super').innerText=`$${new Intl.NumberFormat('es-CO').format(tSup)}`;
+        document.getElementById('total_sumapolar').innerText=`$${new Intl.NumberFormat('es-CO').format(tSumP)}`;
+        document.getElementById('total_gradezco').innerText=`$${new Intl.NumberFormat('es-CO').format(tGra)}`;
+        document.getElementById('total_otro').innerText=`$${new Intl.NumberFormat('es-CO').format(tOtr)}`;
+        
+        const granTotalConsig = tB + tN + tD + tDP + tQua + tPol + tUni + tSup + tSumP + tGra + tOtr;
+        document.getElementById('lblTotalConsig').innerText = `$ ${new Intl.NumberFormat('es-CO').format(granTotalConsig)}`;
+
+        const totalEntregado = granTotalConsig + getVal('valEfectivo') + getVal('valDevoluciones') + getVal('valGastos');
+        const diff = getVal('valCargue') - totalEntregado;
+        
+        const card = document.getElementById('arqueoResult');
+        const valDisplay = document.getElementById('diffVal');
+        valDisplay.innerText = new Intl.NumberFormat('es-CO', {style:'currency', currency:'COP'}).format(diff);
+        
+        if(getVal('valCargue')===0) { 
+            card.className='arqueo-card'; valDisplay.innerText = "$0";
+        } else if(diff===0) { 
+            card.className='arqueo-card success'; card.querySelector('.arqueo-msg').innerText = "✅ CUADRE PERFECTO";
+        } else if(diff>0) { 
+            card.className='arqueo-card error'; card.querySelector('.arqueo-msg').innerText = "❌ FALTANTE (DEBES DINERO)";
+        } else { 
+            card.className='arqueo-card error'; card.querySelector('.arqueo-msg').innerText = "⚠️ SOBRANTE (REVISA)";
+        }
+    }
+
+    async function generarObjExcel() {
+        const nombre = document.getElementById('transportador').value;
+        const fecha = document.getElementById('fechaPlanilla').value;
+        const tB=getSum('m-bancolombia'), tN=getSum('m-nequi'), tD=getSum('m-davivienda'), tDP=getSum('m-daviplata');
+        const tQua=getSum('m-quala'), tPol=getSum('m-polar'), tUni=getSum('m-unilever'), tSup=getSum('m-super'), tSumP=getSum('m-sumapolar');
+        // NUEVOS PROVEEDORES
+        const tGra=getSum('m-gradezco'), tOtr=getSum('m-otro');
+        
+        const granTotal = tB+tN+tD+tDP+tQua+tPol+tUni+tSup+tSumP+tGra+tOtr;
+        const getConcat = (cls) => { let v=[]; document.querySelectorAll(`.${cls}`).forEach(i=>{if(i.value)v.push(i.value)}); return v.join(' '); };
+        
+        const dataRow = [{
+            "Marca temporal": new Date().toLocaleString(),
+            "NOMBRE DEL TRANSPORTADOR ": nombre,
+            "BANCOLOMBIA_NEQUI_DETALLE": getConcat('m-bancolombia')+" "+getConcat('m-nequi'),
+            "DAVIVIENDA_DAVIPLATA_DETALLE": getConcat('m-davivienda')+" "+getConcat('m-daviplata'),
+            "FECHA DE LA PLANILLA": fecha,
+            "NUMERO DE PLANILLA": document.getElementById('numPlanilla').value,
+            "VALOR TOTAL DEL CARGUE": getVal('valCargue'),
+            "VALOR TOTAL CONSIGNADO": granTotal, 
+            "EFECTIVO PENDIENTE": getVal('valEfectivo'),
+            "DEVOLUCIONES": getVal('valDevoluciones'),
+            "FALTANTES": getVal('valGastos'),
+            "DETALLE_PROVEEDORES": `QUALA:${tQua} POLAR FOCAL:${tPol} UNI:${tUni} SUPER:${tSup} POLAR MIXTO:${tSumP} GRADEZCO:${tGra} OTRO:${tOtr}`
+        }];
+
+        const headerCC = ["codpuc", "tercero", "ccosto", "sccosto", "docrela", "cuota", "artrela", "artcant", "base", "base2", "debito", "credito", "detalle", "ref1", "ref2", "ref3", "ref4", "nodeduc", "libro"];
+        const cc2Data = [headerCC];
+        const addRow = (list, sel, puc, desc, nitTercero, centroCosto) => {
+            document.querySelectorAll(sel).forEach(i => {
+                let v = parseInt(i.value.replace(/\./g,'').replace(/,/g,''))||0;
+                if(v>0) {
+                    const r = Array(19).fill(""); 
+                    r[0]=puc; r[1]=nitTercero || ""; r[2]=centroCosto || ""; r[10]=v; r[11]=0; 
+                    if(puc === 220501001) {
+                        r[12] = `ABONO DE ${nombre} ${fecha} A ${desc}`; 
+                    } else {
+                        r[12] = `${nombre} ${fecha} ${desc}`;
+                    }
+                    r[17]=false;
+                    list.push(r);
+                }
+            });
+        };
+
+        addRow(cc2Data, '.m-bancolombia', 111005001, "BANCOLOMBIA");
+        addRow(cc2Data, '.m-nequi', 111005001, "NEQUI");
+        addRow(cc2Data, '.m-davivienda', 111005002, "DAVIVIENDA");
+        addRow(cc2Data, '.m-daviplata', 111005002, "DAVIPLATA");
+
+        const cc7Data = [headerCC];
+        addRow(cc7Data, '.m-quala', 220501001, "QUALA", "860074450");
+        addRow(cc7Data, '.m-polar', 220501001, "POLAR FOCALIZADO", "830006735");
+        addRow(cc7Data, '.m-unilever', 220501001, "UNILEVER", "860002518");
+        addRow(cc7Data, '.m-super', 220501001, "SUPER", "901731328");
+        addRow(cc7Data, '.m-sumapolar', 220501001, "SUMA POLAR", "830005735", "02");
+        // NUEVAS LINEAS CC7
+        addRow(cc7Data, '.m-gradezco', 220501001, "GRADEZCO", "860007955");
+        addRow(cc7Data, '.m-otro', 220501001, "OTRO PROVEEDOR", "1"); // NIT Genérico 1 para OTRO
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dataRow), "Datos");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cc2Data), "CC2");
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(cc7Data), "CC7");
+        
+        return XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    }
+
+    async function generarObjPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const nombre = document.getElementById('transportador').value;
+
+        doc.setFillColor(0, 104, 55); doc.rect(0,0,pageWidth,30,'F');
+        doc.setTextColor(255); doc.setFontSize(20); doc.text("REPORTE DE LEGALIZACIÓN", pageWidth/2, 18, {align:'center'});
+        doc.setFontSize(10); doc.text("Suma S.A.S.", pageWidth/2, 25, {align:'center'});
+        
+        doc.setTextColor(0); doc.setFontSize(11);
+        let y=45;
+        const line = (l,v, indent=20) => { doc.setFont("helvetica","bold"); doc.text(l, indent, y); doc.setFont("helvetica","normal"); doc.text(v||"0", 130, y); y+=7; };
+        
+        doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.text("1. INFORMACIÓN", 20, y); y+=10; doc.setFontSize(11);
+        line("TRANSPORTADOR:", nombre);
+        line("FECHA:", document.getElementById('fechaPlanilla').value);
+        line("PLANILLA N°:", document.getElementById('numPlanilla').value);
+        y+=5;
+
+        doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.text("2. DETALLE CONSIGNACIONES", 20, y); y+=10; doc.setFontSize(11);
+        doc.setFillColor(230); doc.rect(20, y-5, 170, 7, 'F');
+        doc.setFont("helvetica","bold"); doc.text("2.1 COMPAÑÍA SUMA SAS", 22, y); y+=8;
+        const tB=getSum('m-bancolombia'), tN=getSum('m-nequi'), tD=getSum('m-davivienda'), tDP=getSum('m-daviplata');
+        line("Bancolombia:", `$ ${new Intl.NumberFormat('es-CO').format(tB)}`);
+        line("Nequi:", `$ ${new Intl.NumberFormat('es-CO').format(tN)}`);
+        line("Davivienda:", `$ ${new Intl.NumberFormat('es-CO').format(tD)}`);
+        line("Daviplata:", `$ ${new Intl.NumberFormat('es-CO').format(tDP)}`);
+        
+        y+=2;
+        doc.setFillColor(230); doc.rect(20, y-5, 170, 7, 'F');
+        doc.setFont("helvetica","bold"); doc.text("2.2 PROVEEDORES", 22, y); y+=8;
+        const tQua=getSum('m-quala'), tPol=getSum('m-polar'), tUni=getSum('m-unilever'), tSup=getSum('m-super'), tSumP=getSum('m-sumapolar');
+        const tGra=getSum('m-gradezco'), tOtr=getSum('m-otro');
+        
+        line("Quala:", `$ ${new Intl.NumberFormat('es-CO').format(tQua)}`);
+        line("Polar Focalizado 3042671:", `$ ${new Intl.NumberFormat('es-CO').format(tPol)}`);
+        line("Unilever:", `$ ${new Intl.NumberFormat('es-CO').format(tUni)}`);
+        line("Super:", `$ ${new Intl.NumberFormat('es-CO').format(tSup)}`);
+        line("Polar Mixto 3044268:", `$ ${new Intl.NumberFormat('es-CO').format(tSumP)}`);
+        line("Gradezco:", `$ ${new Intl.NumberFormat('es-CO').format(tGra)}`);
+        line("Otro:", `$ ${new Intl.NumberFormat('es-CO').format(tOtr)}`);
+
+        const granTotal = tB+tN+tD+tDP+tQua+tPol+tUni+tSup+tSumP+tGra+tOtr;
+        y+=2; doc.setDrawColor(0); doc.line(20,y,190,y); y+=6;
+        line("TOTAL CONSIGNADO (TODOS):", `$ ${new Intl.NumberFormat('es-CO').format(granTotal)}`);
+        y+=5;
+
+        doc.setFillColor(240, 248, 255); doc.rect(15, y-5, 180, 50, 'F'); 
+        doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(0, 104, 55);
+        doc.text("3. CIERRE DE CAJA", 20, y); y+=10; 
+        doc.setTextColor(0); doc.setFontSize(11);
+        line("VALOR CARGUE (A ENTREGAR):", document.getElementById('valCargue').value);
+        y+=2;
+        line("(-) Total Consignado:", `$ ${new Intl.NumberFormat('es-CO').format(granTotal)}`);
+        line("(-) Efectivo Entregado:", document.getElementById('valEfectivo').value);
+        line("(-) Devoluciones:", document.getElementById('valDevoluciones').value);
+        line("(-) Gastos / Faltantes:", document.getElementById('valGastos').value);
+        
+        y+=5; doc.setDrawColor(0); doc.line(20,y,190,y); y+=8;
+        const diff = getVal('valCargue') - (granTotal + getVal('valEfectivo') + getVal('valDevoluciones') + getVal('valGastos'));
+        doc.setFontSize(14); doc.setFont("helvetica","bold");
+        if(diff===0) { doc.setTextColor(0,128,0); doc.text("ESTADO: CUADRE PERFECTO ($0)", 20, y); }
+        else if(diff>0) { doc.setTextColor(200,0,0); doc.text(`FALTANTE: $ ${new Intl.NumberFormat('es-CO').format(diff)}`, 20, y); }
+        else { doc.setTextColor(200,150,0); doc.text(`SOBRANTE: $ ${new Intl.NumberFormat('es-CO').format(Math.abs(diff))}`, 20, y); }
+
+        const addPhotoSection = async (inputId, title, mode = 'grid') => {
+            const f = document.getElementById(inputId).files;
+            if(f.length>0) {
+                const imgs=[]; for(let file of f) imgs.push(await fileToImg(file));
+                const pPage = mode === 'full' ? 1 : 4;
+                const pags = Math.ceil(imgs.length/pPage);
+                for(let i=0; i<pags; i++) {
+                    doc.addPage();
+                    doc.setFillColor(0, 104, 55); doc.rect(0,0,pageWidth,15,'F');
+                    doc.setTextColor(255); doc.setFontSize(12); doc.text(`${title} (${i+1}/${pags})`, pageWidth/2, 10, {align:'center'});
+                    const slice = imgs.slice(i*pPage, (i+1)*pPage);
+                    if (mode === 'full') {
+                         const img = slice[0];
+                         const m=10, maxW=pageWidth-(m*2), maxH=pageHeight-30;
+                         const scale = Math.min(maxW/img.width, maxH/img.height);
+                         const w = img.width * scale, h = img.height * scale;
+                         const data = processImg(img, img.width/2, img.height/2, false);
+                         doc.addImage(data, 'JPEG', (pageWidth-w)/2, 25, w, h);
+                    } else {
+                        const cols=2; const margin=10; 
+                        const w=(pageWidth-(margin*3))/cols; const h=120;
+                        slice.forEach((img, idx) => {
+                            const c=idx%cols, r=Math.floor(idx/cols);
+                            const x = margin+(c*(w+margin)), y = 25+(r*(h+margin));
+                            const data = processImg(img, w*4, h*4, true);
+                            doc.addImage(data, 'JPEG', x, y, w, h);
+                            doc.rect(x,y,w,h);
+                        });
+                    }
+                }
+            }
+        };
+
+        await addPhotoSection('imgConsigSuma', 'SOPORTES SUMA SAS', 'grid');
+        await addPhotoSection('imgConsigProv', 'SOPORTES PROVEEDORES', 'grid');
+        await addPhotoSection('imgPlanilla', 'PLANILLA / DOCUMENTOS', 'full');
+
+        return doc.output('blob');
+    }
+
+    async function procesarYDescargar() {
+        if(!validar()) return;
+        setLoading(true);
+        try {
+            const excelData = await generarObjExcel();
+            const pdfBlob = await generarObjPDF();
+            
+            const zip = new JSZip();
+            const nombre = document.getElementById('transportador').value;
+            const d = new Date();
+            const baseName = `LEGALIZACION_${nombre}_${d.getDate()}`;
+
+            // Añadimos ambos archivos al ZIP
+            zip.file(`${baseName}.xlsx`, excelData);
+            zip.file(`${baseName}.pdf`, pdfBlob);
+
+            // Generamos el ZIP y lo descargamos
+            const zipContent = await zip.generateAsync({type:"blob"});
+            const url = URL.createObjectURL(zipContent);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${baseName}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            setLoading(false);
+        } catch(e) { 
+            alert("Error: "+e.message); 
+            setLoading(false);
+        } 
+    }
+
+    function validar() { if(!document.getElementById('transportador').value){alert("Selecciona Transportador");return false;} return true; }
+    function setLoading(s) { const l=document.getElementById('loader'); l.style.display=s?'block':'none'; document.querySelectorAll('button').forEach(b=>b.disabled=s); }
+    function fileToImg(f){return new Promise(r=>{const rd=new FileReader();rd.onload=e=>{const i=new Image();i.onload=()=>r(i);i.src=e.target.result;};rd.readAsDataURL(f);});}
+    function processImg(i,w,h,cov){
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        const x=c.getContext('2d');
+        x.fillStyle='#fff';x.fillRect(0,0,w,h);
+        let r=cov?Math.max(w/i.width,h/i.height):Math.min(w/i.width,h/i.height);
+        let nw=i.width*r,nh=i.height*r;
+        x.drawImage(i,(w-nw)/2,(h-nh)/2,nw,nh);
+        return c.toDataURL('image/jpeg', 0.85);
+    }
+</script>
+</body>
+</html>
